@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>res/arrow-down-s-line.png</file>
+        <file>res/arrow-left-s-line.png</file>
+        <file>res/arrow-right-s-line.png</file>
+        <file>res/arrow-up-s-line.png</file>
+        <file>res/folder-2-line.png</file>
+    </qresource>
+</RCC>

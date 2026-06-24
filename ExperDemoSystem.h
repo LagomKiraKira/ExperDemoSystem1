@@ -28,6 +28,9 @@
 #include "MyLibs/AndysComputations.h"
 #include "MyLibs/NeuronAnalysis.h"
 #include "MyLibs/experiment.h"
+#include "DmdConfigIO.h"
+#include "Mylibs/Talk2ViALUX_DMD.h"
+#include <QButtonGroup>
 
 #include <QObject>
 #include <QThread>
@@ -46,6 +49,7 @@
 #include <QRandomGenerator>
 #include <QDebug>
 
+#include <map>
 //主线程类
 class ExperDemoSystem : public QWidget
 {
@@ -70,6 +74,28 @@ public:
     std::unordered_map<int, int> RealVoltage;  //真实对照的电压值
     int Fre;    //电压输出频率
     int DutyCycle;   //方波占空比
+    // DMD Configuration persistence
+    DmdPersistConfig m_dmdCfg;
+    void DmdSyncUItoConfig();
+    void DmdSyncConfigToUI();
+    void DmdAutoSave();
+
+    // DMD Mask cache (pre-generated circle/arc templates)
+    std::map<int, cv::Mat> m_maskCacheCircle;
+    void DmdPreGenerateMasks();
+
+    // Simulation mode
+    cv::VideoCapture* m_simVideo;
+    bool m_simRunning;
+    QString m_simVideoPath;
+    cv::Mat m_simCurrentFrame;
+    void DmdSimRenderOverlay(cv::Mat& frame);
+
+    // DMD Worker thread
+    QThread* m_dmdThread;
+    bool m_dmdRunning;
+    void dmdWorkerLoop();
+
 
     //定时器事件 显示图像
     void timerEvent(QTimerEvent* e);
@@ -123,7 +149,19 @@ private slots:
     /* 光遗传刺激模块控件 */
     void on_LedSlider_valueChanged(int value);  //Led亮度滑条
     void m_LedSpinBox_valueChanged();  //Led亮度
-    void on_LedOnOff_clicked();   //Led开关
+void on_LedOnOff_clicked();   //Led??
+
+    /* DMD?????? */
+    void on_DmdPatternType_currentIndexChanged(int index);
+    void on_DmdSpotRadius_valueChanged(int value);
+    void on_DmdSegStart_valueChanged(int value);
+    void on_DmdSegEnd_valueChanged(int value);
+    void on_DmdKalmanComp_valueChanged(int value);
+    void on_DmdSideSelect_currentIndexChanged(int index);
+    void on_DmdRefreshRate_valueChanged(int value);
+    void on_radioRealTime_toggled(bool checked);
+    void on_radioSimulation_toggled(bool checked);
+    void on_BtnLoadVideo_clicked();
 
     /* 电场刺激模块控价 */
     void on_voltageSlider_valueChanged(int value);

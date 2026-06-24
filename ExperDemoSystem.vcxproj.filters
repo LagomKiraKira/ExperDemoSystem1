@@ -67,6 +67,12 @@
     <ClCompile Include="ExperDemoSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DmdConfigIO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mylibs\Talk2ViALUX_DMD.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mylibs\AndysComputations.h">
@@ -103,6 +109,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="def_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DmdConfigIO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mylibs\Talk2ViALUX_DMD.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

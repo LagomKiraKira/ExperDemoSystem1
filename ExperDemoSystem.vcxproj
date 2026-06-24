@@ -20,7 +20,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -36,7 +36,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
-    <QtInstall>5.15.2_msvc2019_64</QtInstall>
+    <QtInstall>Qt5.15_MSVC</QtInstall>
     <QtModules>core;gui;widgets;websockets;charts</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
@@ -60,17 +60,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>C:\Program Files (x86)\IVI Foundation\VISA\WinNT\Include;D:\Hasuyo\Opencv\opencv340\build\include;D:\Hasuyo\Opencv\opencv340\build\include\opencv;D:\Hasuyo\位移台开发\SDK\SDK\C++\SLS_A_release\64;D:\Hasuyo\Opencv\opencv340\build\include\opencv2;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Hasuyo\位移台开发\SDK\SDK\C++\SLS_A_release\64;D:\Hasuyo\Opencv\opencv340\build\x64\vc15\lib;C:\Program Files\Photometrics\PVCamSDK\Lib\amd64;C:\Program Files (x86)\IVI Foundation\VISA\WinNT\Lib_x64\msc;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files %28x86%29\IVI Foundation\VISA\WinNT\Include;G:\Microsoft Visual Studio2022\env\opencv340\build\include;G:\Microsoft Visual Studio2022\env\opencv340\build\include\opencv;G:\Microsoft Visual Studio2022\env\SDK\SDK\C++\SLS_A_release\64;G:\Microsoft Visual Studio2022\env\opencv340\build\include\opencv2;$(IncludePath)</IncludePath>
+    <LibraryPath>G:\Microsoft Visual Studio2022\env\SDK\SDK\C++\SLS_A_release\64;G:\Microsoft Visual Studio2022\env\opencv340\build\x64\vc15\lib;C:\Program Files\Photometrics\PVCamSDK\Lib\amd64;C:\Program Files %28x86%29\IVI Foundation\VISA\WinNT\Lib_x64\msc;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Hasuyo\Code_files\C++_Code\WormTrackingSys\QtMiniControl\NewMini;D:\Hasuyo\Code_files\C++_Code\WormTrackingSys\QtMiniControl\NewMini\3rdPartyLibs;D:\Hasuyo\Code_files\C++_Code\WormTrackingSys\QtMiniControl\NewMini\Mylibs;C:\Program Files\Photometrics\PVCamSDK\\Inc;$(VXIPNPPATH)WinNT\inlude;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\DMD\ALP-4.3\ALP-4.3 API;G:\Microsoft Visual Studio2022\env\opencv340\build\include\opencv2;G:\Microsoft Visual Studio2022\env\opencv340\build\include\opencv;G:\Microsoft Visual Studio2022\env\opencv340\build\include;C:\Users\lenovo\source\repos\ExperDemoSystem;C:\Users\lenovo\source\repos\ExperDemoSystem\3rdPartyLibs;C:\Users\lenovo\source\repos\ExperDemoSystem\Mylibs;C:\Program Files\Photometrics\PVCamSDK\\Inc;$(VXIPNPPATH)WinNT\inlude;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opencv_world340.lib;pvcam64.lib;opencv_world340d.lib;TLDC4100_64.lib;visa64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world340.lib;pvcam64.lib;opencv_world340d.lib;TLDC4100_64.lib;visa64.lib;alp4395.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\DMD\ALP-4.3\ALP-4.3 API\x64;G:\Microsoft Visual Studio2022\env\opencv340\build\x64\vc14\lib;G:\Microsoft Visual Studio2022\env\opencv340\build\x64\vc15\lib;C:\Program Files %28x86%29\IVI Foundation\VISA\WinNT\lib;C:\Program Files\Photometrics\PVCamSDK\Lib;G:\Microsoft Visual Studio2022\env\SDK\SDK\C++\SLS_A_release\64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -103,12 +104,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="DmdConfigIO.cpp" />
     <ClCompile Include="Mylibs\AndysComputations.cpp" />
     <ClCompile Include="Mylibs\AndysOpenCVLib.cpp" />
     <ClCompile Include="Mylibs\experiment.cpp" />
     <ClCompile Include="Mylibs\NeuronAnalysis.cpp" />
     <ClCompile Include="Mylibs\Talk2MomentCamera.cpp" />
     <ClCompile Include="Mylibs\Talk2TLDC4104.cpp" />
+    <ClCompile Include="Mylibs\Talk2ViALUX_DMD.cpp" />
     <ClCompile Include="Mylibs\Talk2WStage.cpp" />
     <ClCompile Include="Mylibs\WriteOutNeuron.cpp" />
     <QtRcc Include="ExperDemoSystem.qrc" />
@@ -125,6 +128,7 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="def_common.h" />
+    <ClInclude Include="DmdConfigIO.h" />
     <ClInclude Include="Mylibs\AndysComputations.h" />
     <ClInclude Include="Mylibs\AndysOpenCVLib.h" />
     <ClInclude Include="Mylibs\experiment.h" />
@@ -132,6 +136,7 @@
     <ClInclude Include="Mylibs\SLS_Dll.h" />
     <ClInclude Include="Mylibs\Talk2MomentCamera.h" />
     <ClInclude Include="Mylibs\Talk2TLDC4104.h" />
+    <ClInclude Include="Mylibs\Talk2ViALUX_DMD.h" />
     <ClInclude Include="Mylibs\Talk2WStage.h" />
     <ClInclude Include="Mylibs\WriteOutNeuron.h" />
     <QtMoc Include="RemoteConnectClient.h" />

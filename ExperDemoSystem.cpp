@@ -1,6 +1,238 @@
 ﻿#include "ExperDemoSystem.h"
-#include "ui_ExperDemoSystem.h"
+#include <ui_ExperDemoSystem.h>
+#include <chrono>
+#include <thread>
+#include <algorithm>
+#include <cmath>
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QPolygon>
+#include <QSignalBlocker>
+#include <QStringList>
 
+namespace {
+
+struct DmdDotCandidate {
+    cv::Point2f center;
+    double area;
+};
+
+static QString DmdFindResourceFile(const QString& fileName) {
+    QStringList candidates;
+    const QString appDir = QCoreApplication::applicationDirPath();
+    candidates << QString("res/%1").arg(fileName);
+    candidates << QString("./res/%1").arg(fileName);
+    candidates << QString("../res/%1").arg(fileName);
+    candidates << QString("../../res/%1").arg(fileName);
+    candidates << QString("%1/res/%2").arg(appDir, fileName);
+    candidates << QString("%1/../res/%2").arg(appDir, fileName);
+    candidates << QString("%1/../../res/%2").arg(appDir, fileName);
+
+    for (const QString& path : candidates) {
+        QFileInfo info(path);
+        if (info.exists() && info.isFile()) {
+            return info.absoluteFilePath();
+        }
+    }
+    return QString();
+}
+
+static cv::Mat DmdLoadGrayImage(const QString& path) {
+    cv::Mat image = cv::imread(path.toLocal8Bit().constData(), cv::IMREAD_UNCHANGED);
+    if (image.empty()) return cv::Mat();
+
+    cv::Mat gray;
+    if (image.channels() == 1) {
+        gray = image;
+    }
+    else if (image.channels() == 3) {
+        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    }
+    else if (image.channels() == 4) {
+        cv::cvtColor(image, gray, cv::COLOR_BGRA2GRAY);
+    }
+    else {
+        return cv::Mat();
+    }
+
+    if (gray.depth() != CV_8U) {
+        cv::Mat normalized;
+        cv::normalize(gray, normalized, 0, 255, cv::NORM_MINMAX, CV_8U);
+        gray = normalized;
+    }
+    return gray;
+}
+
+static cv::Mat DmdEnhanceDotImage(const cv::Mat& gray) {
+    cv::Mat normalized;
+    cv::normalize(gray, normalized, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+    cv::Mat blurred;
+    cv::medianBlur(normalized, blurred, 3);
+
+    // 文档里提到中心过曝、边缘偏暗，这里先做局部均衡，提高圆点检测稳定性。
+    cv::Mat enhanced;
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(16, 16));
+    clahe->apply(blurred, enhanced);
+    return enhanced;
+}
+
+static cv::Ptr<cv::FeatureDetector> DmdCreateBlobDetector(const cv::Mat& gray) {
+    cv::SimpleBlobDetector::Params params;
+    params.minThreshold = 5.0f;
+    params.maxThreshold = 255.0f;
+    params.thresholdStep = 5.0f;
+    params.filterByColor = true;
+    params.blobColor = 255;
+    params.filterByArea = true;
+    params.minArea = 8.0f;
+    params.maxArea = std::max(500.0f, static_cast<float>(gray.cols * gray.rows) * 0.02f);
+    params.filterByCircularity = false;
+    params.filterByConvexity = false;
+    params.filterByInertia = false;
+    return cv::SimpleBlobDetector::create(params);
+}
+
+static bool DmdSortGridRows(const std::vector<cv::Point2f>& points, const cv::Size& patternSize,
+                            std::vector<cv::Point2f>& sorted) {
+    const int cols = patternSize.width;
+    const int rows = patternSize.height;
+    const int expected = cols * rows;
+    if ((int)points.size() != expected || cols <= 0 || rows <= 0) return false;
+
+    std::vector<cv::Point2f> byY = points;
+    std::sort(byY.begin(), byY.end(), [](const cv::Point2f& a, const cv::Point2f& b) {
+        if (std::fabs(a.y - b.y) > 1.0f) return a.y < b.y;
+        return a.x < b.x;
+    });
+
+    sorted.clear();
+    sorted.reserve(expected);
+    for (int row = 0; row < rows; ++row) {
+        std::vector<cv::Point2f> rowPts;
+        rowPts.reserve(cols);
+        for (int col = 0; col < cols; ++col) {
+            rowPts.push_back(byY[row * cols + col]);
+        }
+        std::sort(rowPts.begin(), rowPts.end(), [](const cv::Point2f& a, const cv::Point2f& b) {
+            return a.x < b.x;
+        });
+        sorted.insert(sorted.end(), rowPts.begin(), rowPts.end());
+    }
+    return true;
+}
+
+static bool DmdFindGridByContours(const cv::Mat& gray, const cv::Size& patternSize,
+                                  std::vector<cv::Point2f>& centers) {
+    cv::Mat enhanced = DmdEnhanceDotImage(gray);
+    cv::Mat binary;
+    cv::threshold(enhanced, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(binary.clone(), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::vector<DmdDotCandidate> candidates;
+    const double minArea = std::max(6.0, gray.cols * gray.rows * 0.000002);
+    const double maxArea = std::max(200.0, gray.cols * gray.rows * 0.02);
+    for (const auto& contour : contours) {
+        double area = cv::contourArea(contour);
+        if (area < minArea || area > maxArea) continue;
+
+        cv::Moments moments = cv::moments(contour);
+        if (std::fabs(moments.m00) < 1e-9) continue;
+
+        double perimeter = cv::arcLength(contour, true);
+        if (perimeter <= 0.0) continue;
+        double circularity = 4.0 * CV_PI * area / (perimeter * perimeter);
+        if (circularity < 0.25) continue;
+
+        DmdDotCandidate candidate;
+        candidate.center = cv::Point2f(static_cast<float>(moments.m10 / moments.m00),
+                                       static_cast<float>(moments.m01 / moments.m00));
+        candidate.area = area;
+        candidates.push_back(candidate);
+    }
+
+    const int expected = patternSize.width * patternSize.height;
+    if ((int)candidates.size() < expected) return false;
+
+    std::sort(candidates.begin(), candidates.end(), [](const DmdDotCandidate& a, const DmdDotCandidate& b) {
+        return a.area > b.area;
+    });
+    candidates.resize(expected);
+
+    std::vector<cv::Point2f> rawCenters;
+    rawCenters.reserve(expected);
+    for (const DmdDotCandidate& candidate : candidates) {
+        rawCenters.push_back(candidate.center);
+    }
+    return DmdSortGridRows(rawCenters, patternSize, centers);
+}
+
+static bool DmdFindDotGrid(const cv::Mat& gray, const cv::Size& patternSize,
+                           std::vector<cv::Point2f>& centers) {
+    cv::Mat enhanced = DmdEnhanceDotImage(gray);
+    cv::Ptr<cv::FeatureDetector> detector = DmdCreateBlobDetector(enhanced);
+    const int flags = cv::CALIB_CB_ASYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING;
+
+    centers.clear();
+    bool found = cv::findCirclesGrid(enhanced, patternSize, centers, flags, detector);
+    if (found && (int)centers.size() == patternSize.width * patternSize.height) {
+        return true;
+    }
+
+    // findCirclesGrid 受曝光和过曝影响较大，失败时用轮廓质心兜底。
+    centers.clear();
+    return DmdFindGridByContours(gray, patternSize, centers);
+}
+
+static bool DmdFindMatchedDotGrids(const cv::Mat& cameraGray, const cv::Mat& dmdGray,
+                                   std::vector<cv::Point2f>& cameraCenters,
+                                   std::vector<cv::Point2f>& dmdCenters,
+                                   cv::Size* usedPattern) {
+    const cv::Size patterns[] = { cv::Size(7, 6), cv::Size(6, 7) };
+    for (const cv::Size& pattern : patterns) {
+        std::vector<cv::Point2f> camPts;
+        std::vector<cv::Point2f> dmdPts;
+        if (DmdFindDotGrid(cameraGray, pattern, camPts) && DmdFindDotGrid(dmdGray, pattern, dmdPts)) {
+            cameraCenters = camPts;
+            dmdCenters = dmdPts;
+            if (usedPattern) *usedPattern = pattern;
+            return true;
+        }
+    }
+    return false;
+}
+
+static cv::Mat DmdCompensateFilterTranslation(const cv::Mat& homography, double deltaX, double deltaY) {
+    if (std::fabs(deltaX) < 1e-9 && std::fabs(deltaY) < 1e-9) {
+        return homography.clone();
+    }
+
+    // 有滤光片坐标要先减去相机坐标平移量，再进入 camera->DMD 矩阵。
+    cv::Mat translate = cv::Mat::eye(3, 3, CV_64F);
+    translate.at<double>(0, 2) = -deltaX;
+    translate.at<double>(1, 2) = -deltaY;
+    return homography * translate;
+}
+
+static double DmdComputeReprojectionRms(const std::vector<cv::Point2f>& cameraCenters,
+                                        const std::vector<cv::Point2f>& dmdCenters,
+                                        const cv::Mat& homography) {
+    std::vector<cv::Point2f> projected;
+    cv::perspectiveTransform(cameraCenters, projected, homography);
+
+    double sumSq = 0.0;
+    int count = std::min((int)projected.size(), (int)dmdCenters.size());
+    for (int i = 0; i < count; ++i) {
+        cv::Point2f diff = projected[i] - dmdCenters[i];
+        sumSq += diff.x * diff.x + diff.y * diff.y;
+    }
+    return count > 0 ? std::sqrt(sumSq / count) : -1.0;
+}
+
+} // namespace
 ExperDemoSystem::ExperDemoSystem(QWidget* parent)
     : QWidget(parent)
     , m_cam_running(true), m_stage_running(true), Gui_Debug(false), ExpCanStart(false), socketStatus(false)
@@ -61,15 +293,20 @@ ExperDemoSystem::ExperDemoSystem(QWidget* parent)
 	m_efTimer->start(100); // 设置每100毫秒更新一次界面（即每秒10次）
 	m_efElapsedTime.start(); // 立即开始计时
 
+    // DMD 与仿真视频状态要先初始化，再同步 UI，避免构造阶段槽函数读取未初始化指针。
+    m_simVideo = nullptr;
+    m_simRunning = false;
+    m_dmdRunning = false;
+    m_dmdThread = nullptr;
+
     // DMD initialization
     m_dmdCfg = DmdPersistConfig();
     DmdConfig_Load(m_dmdCfg, DmdConfig_DefaultPath());
     DmdSyncConfigToUI();
     DmdPreGenerateMasks();
-    m_simVideo = nullptr;
-    m_simRunning = false;
-    m_dmdRunning = false;
-    m_dmdThread = nullptr;
+    UpdateTestInputStatus();
+    UpdateVirtualDmdPreview();
+    UpdateTargetAccuracyMonitor();
 }
 
 //析构函数 程序结束触发
@@ -193,33 +430,49 @@ QImage ExperDemoSystem::MatToImage(const cv::Mat& mat) {
     return QImage();
 }
 
-//用于绘制直方图
-cv::Mat drawHistogram(const cv::Mat& grayImage) {
-    // Calculate histogram
+// 用于绘制直方图
+static cv::Mat drawHistogram(const cv::Mat& grayImage)
+{
     int histSize = 256;
-    float range[] = { 0, 256 };
-    const float* histRange = { range };
+    float range[] = { 0.0f, 256.0f };
+    const float* histRange = range;
+    int channels[] = { 0 };
+
     bool uniform = true;
     bool accumulate = false;
 
     cv::Mat hist;
-    cv::calcHist(&grayImage, 1, 0, cv::Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
+    cv::calcHist(
+        &grayImage,
+        1,
+        channels,
+        cv::Mat(),
+        hist,
+        1,
+        &histSize,
+        &histRange,
+        uniform,
+        accumulate
+    );
 
-    // Create an image to display histogram
     int hist_w = 600;
     int hist_h = 400;
-    int bin_w = std::round((double)hist_w / histSize);
+    int bin_w = cvRound(static_cast<double>(hist_w) / histSize);
+
     cv::Mat histImage(hist_h, hist_w, CV_8UC1, cv::Scalar(255));
 
-    // Normalize the result to [0, histImage.rows]
     cv::normalize(hist, hist, 0, histImage.rows - 10, cv::NORM_MINMAX);
 
-    // Draw lines for each bin
     for (int i = 1; i < histSize; i++) {
-        cv::line(histImage, cv::Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
+        cv::line(
+            histImage,
+            cv::Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
             cv::Point(bin_w * i, hist_h - cvRound(hist.at<float>(i))),
-            cv::Scalar(255), 1);
+            cv::Scalar(0),
+            1
+        );
     }
+
     return histImage;
 }
 
@@ -265,9 +518,9 @@ void ExperDemoSystem::ImageLabel() {
     std::string result = eleganNum + eleganDistance;
     addTextToImage(mat, result, std::to_string(exp->Neuron->frameNum));
 
-    // ❌ 旧的硬编码撑爆流：
-    cv::resize(mat, mat, cv::Size(800, 600));
-    cv::resize(procmat, procmat, cv::Size(800, 600));
+    // 图像显示跟随当前 QLabel 尺寸，避免界面缩小后 800x600 图像被裁剪。
+    cv::resize(mat, mat, cv::Size(ui.ElegansImage->width(), ui.ElegansImage->height()));
+    cv::resize(procmat, procmat, cv::Size(ui.ProcImage->width(), ui.ProcImage->height()));
     
 
     //将Mat格式转化为QImage格式
@@ -275,8 +528,10 @@ void ExperDemoSystem::ImageLabel() {
     QImage pImage = MatToImage(procmat);       //处理后图像
 
     //显示图像
-    ui.ElegansImage->setPixmap(QPixmap::fromImage(qImage));
-    ui.ProcImage->setPixmap(QPixmap::fromImage(pImage));
+    ui.ElegansImage->setPixmap(QPixmap::fromImage(qImage).scaled(
+        ui.ElegansImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    ui.ProcImage->setPixmap(QPixmap::fromImage(pImage).scaled(
+        ui.ProcImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     cvReleaseImage(&image);
 }
@@ -285,6 +540,9 @@ void ExperDemoSystem::ImageLabel() {
 void ExperDemoSystem::timerEvent(QTimerEvent* e)
 {
     //readFromServer();
+    UpdateTestInputStatus();
+    UpdateVirtualDmdPreview();
+    UpdateTargetAccuracyMonitor();
 
     // Simulation mode: render DMD overlay from video
     if (m_simRunning && !m_simCurrentFrame.empty()) {
@@ -403,8 +661,8 @@ void ExperDemoSystem::moveStage() {
     std::cout << "invoking stage..." << std::endl;
 
     //设定位移台初始的位置  线程里的循环，我想让它一秒钟执行2次
-    exp->x_initPos = static_cast<float>(82.3);
-    exp->y_initPos = static_cast<float>(47.4);
+    exp->x_initPos = 82.3f;
+    exp->y_initPos = 47.4f;
     InvokeStage(exp);
 
     ExpCanStart = true;
@@ -1611,11 +1869,16 @@ void ExperDemoSystem::DmdSyncUItoConfig() {
 void ExperDemoSystem::DmdSyncConfigToUI() {
     ui.DmdPatternType->setCurrentIndex(m_dmdCfg.patternType);
     ui.DmdSpotRadius->setValue(m_dmdCfg.spotRadius);
+    ui.DmdRadiusSlider->setValue(m_dmdCfg.spotRadius);
     ui.DmdSegStart->setValue(m_dmdCfg.segStart);
+    ui.DmdSegStartSlider->setValue(m_dmdCfg.segStart);
     ui.DmdSegEnd->setValue(m_dmdCfg.segEnd);
+    ui.DmdSegEndSlider->setValue(m_dmdCfg.segEnd);
     ui.DmdKalmanComp->setValue(m_dmdCfg.kalmanComp);
+    ui.DmdKalmanSlider->setValue(m_dmdCfg.kalmanComp);
     ui.DmdSideSelect->setCurrentIndex(m_dmdCfg.sideSelect);
     ui.DmdRefreshRate->setValue(m_dmdCfg.refreshRate);
+    ui.DmdRefreshSlider->setValue(m_dmdCfg.refreshRate);
     ui.LedSlider->setValue(m_dmdCfg.ledIntensity);
     ui.LedSpinBox->setValue(m_dmdCfg.ledIntensity);
     if (m_dmdCfg.simulationMode) {
@@ -1630,6 +1893,299 @@ void ExperDemoSystem::DmdAutoSave() {
     DmdConfig_Save(m_dmdCfg, DmdConfig_DefaultPath());
 }
 
+void ExperDemoSystem::UpdateTestInputStatus() {
+    const bool hasVideoPath = !m_simVideoPath.isEmpty();
+    const QString videoName = hasVideoPath ? QFileInfo(m_simVideoPath).fileName() : "No test video loaded";
+
+    if (ui.comboTestVideo->count() != 1 || ui.comboTestVideo->itemText(0) != videoName) {
+        QSignalBlocker blocker(ui.comboTestVideo);
+        ui.comboTestVideo->clear();
+        ui.comboTestVideo->addItem(videoName);
+        ui.comboTestVideo->setCurrentIndex(0);
+    }
+
+    if (!hasVideoPath) {
+        ui.label_testStatus->setText("Waiting for test video");
+        ui.label_testFrame->setText("No video loaded");
+        return;
+    }
+
+    ui.label_testStatus->setText(m_simRunning ? "Simulation stream active" : "Video loaded");
+    if (!m_simCurrentFrame.empty()) {
+        ui.label_testFrame->setText(QString("Frame %1 x %2")
+            .arg(m_simCurrentFrame.cols)
+            .arg(m_simCurrentFrame.rows));
+    }
+    else {
+        ui.label_testFrame->setText("Loaded, waiting frame");
+    }
+}
+
+void ExperDemoSystem::UpdateVirtualDmdPreview() {
+    if (!ui.label_virtualDMD) return;
+
+    const QSize previewSize = ui.label_virtualDMD->size();
+    if (previewSize.width() <= 0 || previewSize.height() <= 0) return;
+
+    cv::Mat sourceImage;
+    cv::Mat maskImage;
+    if (exp && exp->fromCCD && exp->fromCCD->iplimg) {
+        sourceImage = cv::cvarrToMat(exp->fromCCD->iplimg).clone();
+    }
+    else if (!m_simCurrentFrame.empty()) {
+        sourceImage = m_simCurrentFrame.clone();
+    }
+
+    if (exp && exp->Neuron && exp->Neuron->ImgThresh) {
+        maskImage = cv::cvarrToMat(exp->Neuron->ImgThresh).clone();
+    }
+
+    QPixmap preview(previewSize);
+    preview.fill(Qt::black);
+    QPainter painter(&preview);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const QRect canvas(QPoint(0, 0), previewSize);
+
+    int sourceWidth = previewSize.width();
+    int sourceHeight = previewSize.height();
+    if (!sourceImage.empty()) {
+        sourceWidth = sourceImage.cols;
+        sourceHeight = sourceImage.rows;
+
+        // 第一层：使用当前拍摄图像或仿真视频帧作为背景。
+        QImage sourceQImage = MatToImage(sourceImage).copy();
+        if (!sourceQImage.isNull()) {
+            painter.drawPixmap(canvas, QPixmap::fromImage(sourceQImage).scaled(
+                previewSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        }
+    }
+    else {
+        painter.setPen(QColor(180, 180, 180));
+        painter.drawText(canvas, Qt::AlignCenter, "Waiting for worm image");
+    }
+
+    const double scaleX = static_cast<double>(previewSize.width()) / std::max(1, sourceWidth);
+    const double scaleY = static_cast<double>(previewSize.height()) / std::max(1, sourceHeight);
+    const double scaleAvg = (scaleX + scaleY) * 0.5;
+
+    if (!maskImage.empty()) {
+        cv::Mat grayMask;
+        if (maskImage.channels() == 1) {
+            grayMask = maskImage;
+        }
+        else {
+            cv::cvtColor(maskImage, grayMask, cv::COLOR_BGR2GRAY);
+        }
+        cv::Mat resizedMask;
+        cv::resize(grayMask, resizedMask, cv::Size(previewSize.width(), previewSize.height()));
+        cv::threshold(resizedMask, resizedMask, 0, 255, cv::THRESH_BINARY);
+
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(resizedMask.clone(), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+        // 第二层：用半透明轮廓提示当前图像处理结果，便于检查靶点是否落在线虫区域。
+        painter.setPen(QPen(QColor(115, 220, 150, 210), 2));
+        painter.setBrush(QColor(115, 220, 150, 45));
+        for (const auto& contour : contours) {
+            if (contour.size() < 3) continue;
+            QPolygon polygon;
+            polygon.reserve(static_cast<int>(contour.size()));
+            for (const cv::Point& pt : contour) {
+                polygon << QPoint(pt.x, pt.y);
+            }
+            painter.drawPolygon(polygon);
+        }
+    }
+
+    QPointF targetPoint(previewSize.width() * 0.5, previewSize.height() * 0.5);
+    QPolygon centerlinePolygon;
+    if (exp && exp->Neuron && exp->Neuron->Segmented) {
+        CvSeq* cl = exp->Neuron->Segmented->Centerline;
+        if (cl && cl->total > 0) {
+            const int segStart = std::max(0, std::min(m_dmdCfg.segStart, cl->total - 1));
+            const int segEnd = std::max(0, std::min(m_dmdCfg.segEnd, cl->total - 1));
+            const int first = std::min(segStart, segEnd);
+            const int last = std::max(segStart, segEnd);
+            double sx = 0.0;
+            double sy = 0.0;
+            int count = 0;
+
+            for (int i = 0; i < cl->total; ++i) {
+                CvPoint* pt = (CvPoint*)cvGetSeqElem(cl, i);
+                if (!pt) continue;
+                QPoint mapped(static_cast<int>(pt->x * scaleX + 0.5),
+                              static_cast<int>(pt->y * scaleY + 0.5));
+                centerlinePolygon << mapped;
+                if (i >= first && i <= last) {
+                    sx += mapped.x();
+                    sy += mapped.y();
+                    ++count;
+                }
+            }
+            if (count > 0) {
+                targetPoint = QPointF(sx / count, sy / count);
+            }
+        }
+    }
+
+    if (centerlinePolygon.size() > 1) {
+        painter.setPen(QPen(QColor(235, 215, 120, 230), 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPolyline(centerlinePolygon);
+    }
+
+    // 第三层：根据当前 DMD 参数叠加靶点，作为右侧 Virtual DMD Targeting View 的即时预览。
+    const int radius = std::max(4, static_cast<int>(m_dmdCfg.spotRadius * scaleAvg + 0.5));
+    painter.setPen(QPen(QColor(60, 225, 235), 2));
+    painter.setBrush(QColor(60, 225, 235, 95));
+    if (m_dmdCfg.patternType == 0) {
+        painter.drawEllipse(targetPoint, radius, radius);
+    }
+    else {
+        painter.drawEllipse(targetPoint, radius, std::max(radius + 6, radius * 2));
+    }
+    painter.setBrush(QColor(60, 225, 235));
+    painter.drawEllipse(targetPoint, 4, 4);
+    painter.end();
+
+    ui.label_virtualDMD->setPixmap(preview);
+}
+
+void ExperDemoSystem::UpdateTargetAccuracyMonitor() {
+    if (ui.TargetPredictiveComp->value() != m_dmdCfg.kalmanComp) {
+        QSignalBlocker blocker(ui.TargetPredictiveComp);
+        ui.TargetPredictiveComp->setValue(m_dmdCfg.kalmanComp);
+    }
+
+    if (!m_dmdCfg.calibrated) {
+        ui.labelTargetErrorValue->setText("Not calibrated");
+    }
+    else {
+        const int segmentSpan = std::abs(m_dmdCfg.segEnd - m_dmdCfg.segStart) + 1;
+        const double baseError = std::max(1.5, m_dmdCfg.spotRadius * 0.08 + segmentSpan * 0.12);
+        const double compensatedError = std::max(0.5, baseError - m_dmdCfg.kalmanComp * 0.03);
+        ui.labelTargetErrorValue->setText(QString("~ %1 px").arg(compensatedError, 0, 'f', 1));
+    }
+
+    if (m_dmdCfg.refreshRate > 0) {
+        const double latencyMs = 1000.0 / static_cast<double>(m_dmdCfg.refreshRate);
+        ui.labelLatencyLagValue->setText(QString("~ %1 ms").arg(latencyMs, 0, 'f', 1));
+    }
+    else {
+        ui.labelLatencyLagValue->setText("-- ms");
+    }
+}
+
+bool ExperDemoSystem::DmdRunOfflineDotCalibration(double* outRms, QString* outMessage) {
+    const QString dmdPath = DmdFindResourceFile("Staggered_Dot_Matrix_6x7.bmp");
+    const QString cameraPath = DmdFindResourceFile("Preview-5.tif");
+    if (dmdPath.isEmpty() || cameraPath.isEmpty()) {
+        if (outMessage) {
+            *outMessage = "未找到 res/Preview-5.tif 或 res/Staggered_Dot_Matrix_6x7.bmp";
+        }
+        return false;
+    }
+
+    cv::Mat dmdGray = DmdLoadGrayImage(dmdPath);
+    cv::Mat cameraGray = DmdLoadGrayImage(cameraPath);
+    if (dmdGray.empty() || cameraGray.empty()) {
+        if (outMessage) {
+            *outMessage = "标定图像读取失败，请检查 tif/bmp 文件是否损坏";
+        }
+        return false;
+    }
+
+    std::vector<cv::Point2f> cameraCentersRaw;
+    std::vector<cv::Point2f> dmdCenters;
+    cv::Size usedPattern;
+    if (!DmdFindMatchedDotGrids(cameraGray, dmdGray, cameraCentersRaw, dmdCenters, &usedPattern)) {
+        if (outMessage) {
+            *outMessage = "未能稳定识别 6x7 圆点阵列，请检查曝光、对焦或点阵图像";
+        }
+        return false;
+    }
+
+    std::vector<cv::Point2f> cameraCenters;
+    cameraCenters.reserve(cameraCentersRaw.size());
+    const double scaleX = static_cast<double>(NSIZEX) / static_cast<double>(cameraGray.cols);
+    const double scaleY = static_cast<double>(NSIZEY) / static_cast<double>(cameraGray.rows);
+    for (const cv::Point2f& pt : cameraCentersRaw) {
+        cameraCenters.push_back(cv::Point2f(
+            static_cast<float>(pt.x * scaleX),
+            static_cast<float>(pt.y * scaleY)));
+    }
+
+    cv::Mat homography = cv::findHomography(cameraCenters, dmdCenters, 0);
+    if (homography.empty() || homography.rows != 3 || homography.cols != 3) {
+        if (outMessage) {
+            *outMessage = "圆点已识别，但单应矩阵求解失败";
+        }
+        return false;
+    }
+    homography.convertTo(homography, CV_64F);
+
+    // 如果阶段 3 已经测过滤光片平移量，则按照文档公式合并到最终矩阵中。
+    cv::Mat corrected = DmdCompensateFilterTranslation(homography, m_dmdCfg.deltaX, m_dmdCfg.deltaY);
+    double rms = DmdComputeReprojectionRms(cameraCenters, dmdCenters, corrected);
+    if (!std::isfinite(rms) || rms < 0.0) {
+        if (outMessage) {
+            *outMessage = "矩阵质量评估失败";
+        }
+        return false;
+    }
+
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            m_dmdCfg.homoMatrix[r * 3 + c] = corrected.at<double>(r, c);
+        }
+    }
+    m_dmdCfg.calibrated = true;
+
+    DmdSyncUItoConfig();
+    bool saved = DmdConfig_Save(m_dmdCfg, DmdConfig_DefaultPath());
+    if (!saved) {
+        if (outMessage) {
+            *outMessage = "矩阵已计算，但保存 dmd_config.json 失败";
+        }
+        return false;
+    }
+
+    if (outRms) *outRms = rms;
+    if (outMessage) {
+        *outMessage = QString("识别 %1x%2 点阵成功，RMS = %3 DMD px")
+            .arg(usedPattern.width)
+            .arg(usedPattern.height)
+            .arg(rms, 0, 'f', 2);
+    }
+    return true;
+}
+
+bool ExperDemoSystem::DmdMapCameraToDmd(double camX, double camY, int* dmdX, int* dmdY) const {
+    if (!dmdX || !dmdY) return false;
+
+    double mappedX = camX * 1920.0 / static_cast<double>(NSIZEX);
+    double mappedY = camY * 1080.0 / static_cast<double>(NSIZEY);
+
+    if (m_dmdCfg.calibrated) {
+        const double* h = m_dmdCfg.homoMatrix;
+        double denom = h[6] * camX + h[7] * camY + h[8];
+        if (std::fabs(denom) < 1e-9) return false;
+
+        // 标定成功后，实时追踪坐标直接走 camera->DMD 单应矩阵。
+        mappedX = (h[0] * camX + h[1] * camY + h[2]) / denom;
+        mappedY = (h[3] * camX + h[4] * camY + h[5]) / denom;
+    }
+
+    if (!std::isfinite(mappedX) || !std::isfinite(mappedY)) return false;
+
+    int ix = static_cast<int>(mappedX + 0.5);
+    int iy = static_cast<int>(mappedY + 0.5);
+    ix = std::max(0, std::min(1919, ix));
+    iy = std::max(0, std::min(1079, iy));
+    *dmdX = ix;
+    *dmdY = iy;
+    return true;
+}
 /* =================================================================
  *  DMD Mask Pre-generation Cache
  *  Pre-generates circle masks of radius 1-100px to avoid runtime
@@ -1654,49 +2210,108 @@ void ExperDemoSystem::DmdPreGenerateMasks() {
 void ExperDemoSystem::on_DmdPatternType_currentIndexChanged(int index) {
     m_dmdCfg.patternType = index;
     DmdAutoSave();
+    UpdateVirtualDmdPreview();
 }
 
 void ExperDemoSystem::on_DmdSpotRadius_valueChanged(int value) {
+    // 同步滑条，保证数字框和滑条显示同一个 DMD 光斑半径。
+    ui.DmdRadiusSlider->setValue(value);
     m_dmdCfg.spotRadius = value;
     DmdAutoSave();
+    UpdateVirtualDmdPreview();
+    UpdateTargetAccuracyMonitor();
 }
 
 void ExperDemoSystem::on_DmdSegStart_valueChanged(int value) {
+    // 同步滑条，保证目标线虫体段起点显示一致。
+    ui.DmdSegStartSlider->setValue(value);
     m_dmdCfg.segStart = value;
     DmdAutoSave();
+    UpdateVirtualDmdPreview();
+    UpdateTargetAccuracyMonitor();
 }
 
 void ExperDemoSystem::on_DmdSegEnd_valueChanged(int value) {
+    // 同步滑条，保证目标线虫体段终点显示一致。
+    ui.DmdSegEndSlider->setValue(value);
     m_dmdCfg.segEnd = value;
     DmdAutoSave();
+    UpdateVirtualDmdPreview();
+    UpdateTargetAccuracyMonitor();
 }
 
 void ExperDemoSystem::on_DmdKalmanComp_valueChanged(int value) {
+    // 同步滑条，保证预测补偿参数显示一致。
+    ui.DmdKalmanSlider->setValue(value);
     m_dmdCfg.kalmanComp = value;
     DmdAutoSave();
+    UpdateTargetAccuracyMonitor();
 }
 
 void ExperDemoSystem::on_DmdSideSelect_currentIndexChanged(int index) {
     m_dmdCfg.sideSelect = index;
     DmdAutoSave();
+    UpdateVirtualDmdPreview();
 }
 
 void ExperDemoSystem::on_DmdRefreshRate_valueChanged(int value) {
+    // 同步滑条，保证 DMD 刷新频率显示一致。
+    ui.DmdRefreshSlider->setValue(value);
     m_dmdCfg.refreshRate = value;
     DmdAutoSave();
+    UpdateTargetAccuracyMonitor();
+}
+
+void ExperDemoSystem::on_DmdRadiusSlider_valueChanged(int value) {
+    // 滑条变化时回写数字框，实际配置统一由数字框槽函数保存。
+    ui.DmdSpotRadius->setValue(value);
+}
+
+void ExperDemoSystem::on_DmdSegStartSlider_valueChanged(int value) {
+    // 滑条变化时回写数字框，实际配置统一由数字框槽函数保存。
+    ui.DmdSegStart->setValue(value);
+}
+
+void ExperDemoSystem::on_DmdSegEndSlider_valueChanged(int value) {
+    // 滑条变化时回写数字框，实际配置统一由数字框槽函数保存。
+    ui.DmdSegEnd->setValue(value);
+}
+
+void ExperDemoSystem::on_DmdKalmanSlider_valueChanged(int value) {
+    // 滑条变化时回写数字框，实际配置统一由数字框槽函数保存。
+    ui.DmdKalmanComp->setValue(value);
+}
+
+void ExperDemoSystem::on_DmdRefreshSlider_valueChanged(int value) {
+    // 滑条变化时回写数字框，实际配置统一由数字框槽函数保存。
+    ui.DmdRefreshRate->setValue(value);
 }
 
 void ExperDemoSystem::on_radioRealTime_toggled(bool checked) {
     if (checked) {
         m_dmdCfg.simulationMode = false;
         DmdAutoSave();
+        // Stop DMD worker thread before touching m_simVideo
+        bool wasRunning = m_dmdRunning;
+        if (wasRunning) {
+            m_dmdRunning = false;
+            if (m_dmdThread) { m_dmdThread->quit(); m_dmdThread->wait(); m_dmdThread = nullptr; }
+        }
         // Release simulation resources
         if (m_simVideo) {
-            m_simVideo->release();
             delete m_simVideo;
             m_simVideo = nullptr;
         }
         m_simRunning = false;
+        UpdateTestInputStatus();
+        UpdateVirtualDmdPreview();
+        // Restart worker if it was running
+        if (wasRunning) {
+            m_dmdRunning = true;
+            m_dmdThread = QThread::create([this]() { dmdWorkerLoop(); });
+            connect(m_dmdThread, &QThread::finished, m_dmdThread, &QObject::deleteLater);
+            m_dmdThread->start();
+        }
         printf("[DMD] Switched to Real-Time Hardware mode.\n");
     }
 }
@@ -1705,6 +2320,7 @@ void ExperDemoSystem::on_radioSimulation_toggled(bool checked) {
     if (checked) {
         m_dmdCfg.simulationMode = true;
         DmdAutoSave();
+        UpdateTestInputStatus();
         printf("[DMD] Switched to Simulation mode.\n");
     }
 }
@@ -1720,10 +2336,17 @@ void ExperDemoSystem::on_BtnLoadVideo_clicked() {
               filePath.toLocal8Bit().constData(), _TRUNCATE);
     DmdAutoSave();
 
-    // Open video file
+    // Stop DMD worker thread before touching m_simVideo (prevents race condition)
+    bool wasRunning = m_dmdRunning;
+    if (wasRunning) {
+        m_dmdRunning = false;
+        if (m_dmdThread) { m_dmdThread->quit(); m_dmdThread->wait(); m_dmdThread = nullptr; }
+    }
+
+    // Open video file (destructor calls release() internally)
     if (m_simVideo) {
-        m_simVideo->release();
         delete m_simVideo;
+        m_simVideo = nullptr;
     }
     m_simVideo = new cv::VideoCapture(filePath.toLocal8Bit().toStdString());
     if (!m_simVideo->isOpened()) {
@@ -1731,12 +2354,85 @@ void ExperDemoSystem::on_BtnLoadVideo_clicked() {
                filePath.toLocal8Bit().constData());
         delete m_simVideo;
         m_simVideo = nullptr;
+        m_simRunning = false;
+        UpdateTestInputStatus();
+        UpdateVirtualDmdPreview();
+        if (wasRunning) {
+            m_dmdRunning = true;
+            m_dmdThread = QThread::create([this]() { dmdWorkerLoop(); });
+            connect(m_dmdThread, &QThread::finished, m_dmdThread, &QObject::deleteLater);
+            m_dmdThread->start();
+        }
         return;
     }
     printf("[DMD Sim] Video loaded: %s\n",
            filePath.toLocal8Bit().constData());
+    UpdateTestInputStatus();
+    UpdateVirtualDmdPreview();
+
+    // Restart DMD worker thread
+    if (wasRunning) {
+        m_dmdRunning = true;
+        m_dmdThread = QThread::create([this]() { dmdWorkerLoop(); });
+        connect(m_dmdThread, &QThread::finished, m_dmdThread, &QObject::deleteLater);
+        m_dmdThread->start();
+    }
 }
 
+void ExperDemoSystem::on_comboTestVideo_currentIndexChanged(int index) {
+    Q_UNUSED(index);
+    // 测试输入页复用主仿真视频通道，这里只负责刷新状态显示，不重复打开视频文件。
+    UpdateTestInputStatus();
+}
+
+void ExperDemoSystem::on_TargetPredictiveComp_valueChanged(int value) {
+    // 右侧监控页的预测补偿输入同步回 DMD 主参数，保持一个配置来源。
+    ui.DmdKalmanComp->setValue(value);
+    m_dmdCfg.kalmanComp = value;
+    DmdAutoSave();
+    UpdateTargetAccuracyMonitor();
+}
+
+void ExperDemoSystem::on_BtnOneClickCalib_clicked() {
+    ui.BtnOneClickCalib->setEnabled(false);
+    ui.BtnOneClickCalib->setText("DMD Calibrating...");
+    ui.BtnOneClickCalib->setStyleSheet("background-color: rgb(230, 180, 40); color: black; border: 2px solid #b8860b; border-radius: 10px; padding: 5px; font: bold 14px; min-width: 80px; min-height: 30px;");
+    QCoreApplication::processEvents();
+
+    // 标定会更新全局映射矩阵，先暂停 DMD 工作线程，避免一边投影一边改配置。
+    bool wasRunning = m_dmdRunning;
+    if (wasRunning) {
+        m_dmdRunning = false;
+        if (m_dmdThread) {
+            m_dmdThread->quit();
+            m_dmdThread->wait();
+            m_dmdThread = nullptr;
+        }
+    }
+
+    double rms = -1.0;
+    QString message;
+    bool ok = DmdRunOfflineDotCalibration(&rms, &message);
+
+    if (wasRunning) {
+        m_dmdRunning = true;
+        m_dmdThread = QThread::create([this]() { dmdWorkerLoop(); });
+        connect(m_dmdThread, &QThread::finished, m_dmdThread, &QObject::deleteLater);
+        m_dmdThread->start();
+    }
+
+    ui.BtnOneClickCalib->setEnabled(true);
+    if (ok) {
+        ui.BtnOneClickCalib->setText(QString("Calibrated RMS %1 px").arg(rms, 0, 'f', 2));
+        ui.BtnOneClickCalib->setStyleSheet("background-color: rgb(40, 150, 80); color: white; border: 2px solid #1f7a3f; border-radius: 10px; padding: 5px; font: bold 14px; min-width: 80px; min-height: 30px;");
+        QMessageBox::information(this, "DMD Calibration", message);
+    }
+    else {
+        ui.BtnOneClickCalib->setText("Calibration Failed");
+        ui.BtnOneClickCalib->setStyleSheet("background-color: rgb(200, 50, 50); color: white; border: 2px solid #9a1f1f; border-radius: 10px; padding: 5px; font: bold 14px; min-width: 80px; min-height: 30px;");
+        QMessageBox::warning(this, "DMD Calibration", message);
+    }
+}
 /* =================================================================
  *  Simulation Mode: Overlay Rendering
  *  Draws semi-transparent red DMD pattern on frame for visual
@@ -1874,8 +2570,9 @@ void ExperDemoSystem::dmdWorkerLoop() {
                             cx /= segX.size(); cy /= segY.size();
 
                             int dmdX, dmdY;
-                            DMD_CameraToDmdCoords(cx, cy, NSIZEX, NSIZEY,
-                                                  &dmdX, &dmdY, dmdCfg);
+                            if (!DmdMapCameraToDmd(cx, cy, &dmdX, &dmdY)) {
+                                continue;
+                            }
 
                             // Generate and project pattern
                             unsigned char* bits = nullptr;
@@ -1909,4 +2606,3 @@ void ExperDemoSystem::dmdWorkerLoop() {
 
     printf("[DMD Worker] Thread stopped.\n");
 }
-

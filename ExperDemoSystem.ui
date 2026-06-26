@@ -6,20 +6,20 @@
       <rect>
         <x>0</x>
         <y>0</y>
-        <width>1000</width>
-        <height>540</height>
+        <width>2300</width>
+        <height>1300</height>
       </rect>
     </property>
     <property name="minimumSize">
       <size>
-        <width>1000</width>
-        <height>540</height>
+        <width>1600</width>
+        <height>1300</height>
       </size>
     </property>
     <property name="maximumSize">
       <size>
-        <width>1000</width>
-        <height>540</height>
+        <width>2300</width>
+        <height>1300</height>
       </size>
     </property>
     <property name="font">
@@ -38,10 +38,10 @@ border-radius: 4px;</string>
     <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
         <rect>
-          <x>6</x>
-          <y>6</y>
-          <width>360</width>
-          <height>258</height>
+          <x>10</x>
+          <y>10</y>
+          <width>820</width>
+          <height>630</height>
         </rect>
       </property>
       <property name="font">
@@ -57,10 +57,10 @@ border-radius: 4px;</string>
       <widget class="QLabel" name="ElegansImage">
         <property name="geometry">
           <rect>
-            <x>8</x>
-            <y>18</y>
-            <width>344</width>
-            <height>230</height>
+            <x>10</x>
+            <y>20</y>
+            <width>800</width>
+            <height>600</height>
           </rect>
         </property>
         <property name="font">
@@ -80,17 +80,17 @@ font-weight: bold;</string>
           <string>Waiting for the Stage to be ready</string>
         </property>
         <property name="alignment">
-          <set>Qt::AlignCenter</set>
+          <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
       </widget>
     </widget>
     <widget class="QGroupBox" name="groupBox_2">
       <property name="geometry">
         <rect>
-          <x>6</x>
-          <y>272</y>
-          <width>360</width>
-          <height>258</height>
+          <x>10</x>
+          <y>650</y>
+          <width>820</width>
+          <height>630</height>
         </rect>
       </property>
       <property name="font">
@@ -106,10 +106,10 @@ font-weight: bold;</string>
       <widget class="QLabel" name="ProcImage">
         <property name="geometry">
           <rect>
-            <x>8</x>
-            <y>18</y>
-            <width>344</width>
-            <height>230</height>
+            <x>10</x>
+            <y>20</y>
+            <width>800</width>
+            <height>600</height>
           </rect>
         </property>
         <property name="styleSheet">
@@ -122,17 +122,17 @@ font-weight: bold;</string>
           <string>Waiting for the Stage to be ready</string>
         </property>
         <property name="alignment">
-          <set>Qt::AlignCenter</set>
+          <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
       </widget>
     </widget>
     <widget class="QGroupBox" name="groupBox_GlobalMode">
       <property name="geometry">
         <rect>
-          <x>374</x>
-          <y>6</y>
-          <width>210</width>
-          <height>60</height>
+          <x>840</x>
+          <y>10</y>
+          <width>500</width>
+          <height>120</height>
         </rect>
       </property>
       <property name="font">
@@ -154,10 +154,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_global" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>16</y>
-            <width>198</width>
-            <height>40</height>
+            <x>14</x>
+            <y>39</y>
+            <width>455</width>
+            <height>96</height>
           </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_global">
@@ -236,10 +236,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
     <widget class="QGroupBox" name="groupBox_4">
       <property name="geometry">
         <rect>
-          <x>374</x>
-          <y>74</y>
-          <width>210</width>
-          <height>456</height>
+          <x>840</x>
+          <y>140</y>
+          <width>500</width>
+          <height>1140</height>
         </rect>
       </property>
       <property name="font">
@@ -296,10 +296,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_auto_01">
         <property name="geometry">
           <rect>
-            <x>10</x>
-            <y>286</y>
-            <width>188</width>
-            <height>42</height>
+            <x>23</x>
+            <y>689</y>
+            <width>432</width>
+            <height>101</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_16">
@@ -387,10 +387,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_auto_02">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>18</y>
-            <width>198</width>
-            <height>34</height>
+            <x>14</x>
+            <y>43</y>
+            <width>455</width>
+            <height>82</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -521,10 +521,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_auto_03">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>56</y>
-            <width>198</width>
-            <height>175</height>
+            <x>14</x>
+            <y>135</y>
+            <width>455</width>
+            <height>421</height>
           </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -1143,10 +1143,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_calib" native="true">
         <property name="geometry">
           <rect>
-            <x>10</x>
-            <y>242</y>
-            <width>188</width>
-            <height>36</height>
+            <x>23</x>
+            <y>583</y>
+            <width>432</width>
+            <height>87</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_calib">
@@ -1195,10 +1195,10 @@ QPushButton:hover {
     <widget class="QGroupBox" name="groupBox_6">
       <property name="geometry">
         <rect>
-          <x>592</x>
-          <y>6</y>
-          <width>210</width>
-          <height>276</height>
+          <x>1350</x>
+          <y>10</y>
+          <width>500</width>
+          <height>440</height>
         </rect>
       </property>
       <property name="font">
@@ -1223,10 +1223,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_auto_04">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>18</y>
-            <width>198</width>
-            <height>30</height>
+            <x>14</x>
+            <y>43</y>
+            <width>455</width>
+            <height>72</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_18">
@@ -1385,10 +1385,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd2" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>52</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>125</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd2">
@@ -1460,10 +1460,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd3" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>84</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>202</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd3">
@@ -1538,10 +1538,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd_side" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>116</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>279</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd_side">
@@ -1616,10 +1616,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd4" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>148</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>356</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd4">
@@ -1694,10 +1694,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd5" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>180</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>433</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd5">
@@ -1772,10 +1772,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd6" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>212</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>510</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd6">
@@ -1850,10 +1850,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
       <widget class="QWidget" name="layoutWidget_dmd8" native="true">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>244</y>
-            <width>198</width>
-            <height>28</height>
+            <x>14</x>
+            <y>587</y>
+            <width>455</width>
+            <height>67</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_dmd8">
@@ -1932,10 +1932,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
     <widget class="QGroupBox" name="groupBox_5">
       <property name="geometry">
         <rect>
-          <x>592</x>
-          <y>290</y>
-          <width>210</width>
-          <height>240</height>
+          <x>1350</x>
+          <y>460</y>
+          <width>500</width>
+          <height>820</height>
         </rect>
       </property>
       <property name="font">
@@ -1990,10 +1990,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_auto_05">
         <property name="geometry">
           <rect>
-            <x>10</x>
-            <y>130</y>
-            <width>88</width>
-            <height>86</height>
+            <x>23</x>
+            <y>313</y>
+            <width>202</width>
+            <height>207</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_15">
@@ -2078,10 +2078,10 @@ background-position: center;</string>
       <widget class="QWidget" name="layoutWidget_auto_06">
         <property name="geometry">
           <rect>
-            <x>112</x>
-            <y>130</y>
-            <width>84</width>
-            <height>86</height>
+            <x>258</x>
+            <y>313</y>
+            <width>193</width>
+            <height>207</height>
           </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,1">
@@ -2192,10 +2192,10 @@ background-position: center;</string>
       <widget class="QWidget" name="layoutWidget_auto_07">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>20</y>
-            <width>198</width>
-            <height>92</height>
+            <x>14</x>
+            <y>48</y>
+            <width>455</width>
+            <height>221</height>
           </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -2489,10 +2489,10 @@ background-position: center;</string>
     <widget class="QTabWidget" name="tabWidget_main">
       <property name="geometry">
         <rect>
-          <x>810</x>
-          <y>6</y>
-          <width>184</width>
-          <height>420</height>
+          <x>1860</x>
+          <y>10</y>
+          <width>430</width>
+          <height>1050</height>
         </rect>
       </property>
       <property name="font">
@@ -2522,10 +2522,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
         <widget class="QTabWidget" name="tabWidget_extended">
           <property name="geometry">
             <rect>
-              <x>5</x>
-              <y>5</y>
-              <width>166</width>
-              <height>360</height>
+              <x>10</x>
+              <y>10</y>
+              <width>405</width>
+              <height>985</height>
             </rect>
           </property>
           <widget class="QWidget" name="tab_RemoteNeuron">
@@ -2535,10 +2535,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_17">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>310</y>
-                  <width>146</width>
-                  <height>30</height>
+                  <x>18</x>
+                  <y>746</y>
+                  <width>336</width>
+                  <height>72</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_38" stretch="3,1,0,1,0">
@@ -2633,10 +2633,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_14">
               <property name="geometry">
                 <rect>
-                  <x>6</x>
-                  <y>54</y>
-                  <width>150</width>
-                  <height>30</height>
+                  <x>14</x>
+                  <y>130</y>
+                  <width>345</width>
+                  <height>72</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_35">
@@ -2698,10 +2698,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_auto_08">
               <property name="geometry">
                 <rect>
-                  <x>6</x>
-                  <y>242</y>
-                  <width>150</width>
-                  <height>54</height>
+                  <x>14</x>
+                  <y>583</y>
+                  <width>345</width>
+                  <height>130</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_37">
@@ -2889,10 +2889,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_auto_09">
               <property name="geometry">
                 <rect>
-                  <x>6</x>
-                  <y>18</y>
-                  <width>150</width>
-                  <height>30</height>
+                  <x>14</x>
+                  <y>43</y>
+                  <width>345</width>
+                  <height>72</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_36">
@@ -3019,10 +3019,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_auto_10">
               <property name="geometry">
                 <rect>
-                  <x>6</x>
-                  <y>90</y>
-                  <width>150</width>
-                  <height>40</height>
+                  <x>14</x>
+                  <y>217</y>
+                  <width>345</width>
+                  <height>96</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_25">
@@ -3128,10 +3128,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_auto_11">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>145</y>
-                  <width>146</width>
-                  <height>86</height>
+                  <x>18</x>
+                  <y>349</y>
+                  <width>336</width>
+                  <height>207</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_26">
@@ -3215,10 +3215,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_auto_12">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>60</y>
-                  <width>148</width>
-                  <height>145</height>
+                  <x>18</x>
+                  <y>144</y>
+                  <width>340</width>
+                  <height>349</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_19">
@@ -3610,10 +3610,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="horizontalLayoutWidget">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>18</y>
-                  <width>148</width>
-                  <height>32</height>
+                  <x>18</x>
+                  <y>43</y>
+                  <width>340</width>
+                  <height>77</height>
                 </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_27" stretch="4,2">
@@ -3848,10 +3848,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
         <widget class="QTabWidget" name="tabWidget_testInput">
           <property name="geometry">
             <rect>
-              <x>5</x>
-              <y>5</y>
-              <width>166</width>
-              <height>360</height>
+              <x>10</x>
+              <y>10</y>
+              <width>405</width>
+              <height>985</height>
             </rect>
           </property>
           <widget class="QWidget" name="tab_TestAssessment">
@@ -3861,10 +3861,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QWidget" name="layoutWidget_test" native="true">
               <property name="geometry">
                 <rect>
-                  <x>20</x>
-                  <y>20</y>
-                  <width>380</width>
-                  <height>200</height>
+                  <x>46</x>
+                  <y>48</y>
+                  <width>874</width>
+                  <height>481</height>
                 </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_test">
@@ -3898,10 +3898,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
                         </property>
                         <property name="geometry">
                           <rect>
-                            <x>8</x>
-                            <y>22</y>
-                            <width>68</width>
-                            <height>20</height>
+                            <x>18</x>
+                            <y>53</y>
+                            <width>156</width>
+                            <height>48</height>
                           </rect>
                         </property>
                       </widget>
@@ -3922,10 +3922,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
                         </property>
                         <property name="geometry">
                           <rect>
-                            <x>78</x>
-                            <y>22</y>
-                            <width>86</width>
-                            <height>20</height>
+                            <x>179</x>
+                            <y>53</y>
+                            <width>198</width>
+                            <height>48</height>
                           </rect>
                         </property>
                         <item>
@@ -3967,10 +3967,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
                         </property>
                         <property name="geometry">
                           <rect>
-                            <x>8</x>
-                            <y>50</y>
-                            <width>68</width>
-                            <height>20</height>
+                            <x>18</x>
+                            <y>120</y>
+                            <width>156</width>
+                            <height>48</height>
                           </rect>
                         </property>
                       </widget>
@@ -4000,10 +4000,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
                         </property>
                         <property name="geometry">
                           <rect>
-                            <x>78</x>
-                            <y>50</y>
-                            <width>86</width>
-                            <height>20</height>
+                            <x>179</x>
+                            <y>120</y>
+                            <width>198</width>
+                            <height>48</height>
                           </rect>
                         </property>
                       </widget>
@@ -4033,10 +4033,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="label_virtualDMD">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>18</y>
-                  <width>158</width>
-                  <height>120</height>
+                  <x>18</x>
+                  <y>28</y>
+                  <width>368</width>
+                  <height>300</height>
                 </rect>
               </property>
               <property name="styleSheet">
@@ -4046,7 +4046,7 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
                 <string>DMD Target Preview</string>
               </property>
               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
               </property>
             </widget>
           </widget>
@@ -4057,10 +4057,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="labelTargetErrorTitle">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>28</y>
-                  <width>70</width>
-                  <height>20</height>
+                  <x>18</x>
+                  <y>67</y>
+                  <width>161</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="text">
@@ -4073,10 +4073,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="labelTargetErrorValue">
               <property name="geometry">
                 <rect>
-                  <x>82</x>
-                  <y>28</y>
-                  <width>80</width>
-                  <height>20</height>
+                  <x>189</x>
+                  <y>67</y>
+                  <width>184</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="text">
@@ -4089,10 +4089,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="labelLatencyLagTitle">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>56</y>
-                  <width>70</width>
-                  <height>20</height>
+                  <x>18</x>
+                  <y>135</y>
+                  <width>161</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="text">
@@ -4105,10 +4105,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="labelLatencyLagValue">
               <property name="geometry">
                 <rect>
-                  <x>82</x>
-                  <y>56</y>
-                  <width>80</width>
-                  <height>20</height>
+                  <x>189</x>
+                  <y>135</y>
+                  <width>184</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="text">
@@ -4121,10 +4121,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QLabel" name="labelPredictiveCompTitle">
               <property name="geometry">
                 <rect>
-                  <x>8</x>
-                  <y>84</y>
-                  <width>70</width>
-                  <height>20</height>
+                  <x>18</x>
+                  <y>202</y>
+                  <width>161</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="text">
@@ -4137,10 +4137,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
             <widget class="QSpinBox" name="TargetPredictiveComp">
               <property name="geometry">
                 <rect>
-                  <x>82</x>
-                  <y>84</y>
-                  <width>64</width>
-                  <height>20</height>
+                  <x>189</x>
+                  <y>202</y>
+                  <width>147</width>
+                  <height>48</height>
                 </rect>
               </property>
               <property name="minimum">
@@ -4160,10 +4160,10 @@ QPushButton:hover { background-color: #e6e6e6; border: 2px solid #8a8a8d; }</str
     <widget class="QGroupBox" name="groupBox_8">
       <property name="geometry">
         <rect>
-          <x>810</x>
-          <y>434</y>
-          <width>184</width>
-          <height>96</height>
+          <x>1860</x>
+          <y>1070</y>
+          <width>430</width>
+          <height>210</height>
         </rect>
       </property>
       <property name="font">
@@ -4222,10 +4222,10 @@ QPushButton:hover {
       <widget class="QWidget" name="layoutWidget_auto_13">
         <property name="geometry">
           <rect>
-            <x>6</x>
-            <y>18</y>
-            <width>170</width>
-            <height>48</height>
+            <x>14</x>
+            <y>43</y>
+            <width>391</width>
+            <height>116</height>
           </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -4466,10 +4466,10 @@ background-position: center;</string>
       <widget class="QWidget" name="layoutWidget_auto_14">
         <property name="geometry">
           <rect>
-            <x>30</x>
-            <y>68</y>
-            <width>118</width>
-            <height>24</height>
+            <x>69</x>
+            <y>164</y>
+            <width>271</width>
+            <height>58</height>
           </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_23">

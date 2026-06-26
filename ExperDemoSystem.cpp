@@ -242,6 +242,15 @@ ExperDemoSystem::ExperDemoSystem(QWidget* parent)
 {
     ui.setupUi(this);
 
+    // 主界面按师兄原始大画布显示：默认 2300x1300，高度固定，宽度允许缩到 1600。
+    this->resize(2300, 1300);
+    this->setMinimumSize(1600, 1300);
+    this->setMaximumSize(2300, 1300);
+
+    // 图像区只负责等比例显示，不把采集/识别坐标绑定到 QLabel 尺寸。
+    ui.ElegansImage->setAlignment(Qt::AlignCenter);
+    ui.ProcImage->setAlignment(Qt::AlignCenter);
+
     // 确保窗口部件可以接收到键盘事件
     setFocusPolicy(Qt::StrongFocus);
 
@@ -518,16 +527,11 @@ void ExperDemoSystem::ImageLabel() {
     std::string result = eleganNum + eleganDistance;
     addTextToImage(mat, result, std::to_string(exp->Neuron->frameNum));
 
-    // 图像显示跟随当前 QLabel 尺寸，避免界面缩小后 800x600 图像被裁剪。
-    cv::resize(mat, mat, cv::Size(ui.ElegansImage->width(), ui.ElegansImage->height()));
-    cv::resize(procmat, procmat, cv::Size(ui.ProcImage->width(), ui.ProcImage->height()));
-    
-
     //将Mat格式转化为QImage格式
     QImage qImage = MatToImage(mat);           //原始图像
     QImage pImage = MatToImage(procmat);       //处理后图像
 
-    //显示图像
+    // 只在显示层等比例缩放，采集图像和识别坐标不跟 QLabel 尺寸绑定。
     ui.ElegansImage->setPixmap(QPixmap::fromImage(qImage).scaled(
         ui.ElegansImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
     ui.ProcImage->setPixmap(QPixmap::fromImage(pImage).scaled(
